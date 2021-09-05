@@ -1,4 +1,4 @@
-import ReactDropdown, { useState } from 'react';
+import { useState } from 'react';
 import Container from '@material-ui/core/Container';
 import TextField from'@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
@@ -7,7 +7,6 @@ import RemoveIcon from '@material-ui/icons/Remove';
 import AddIcon from '@material-ui/icons/Add';
 import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
-import { SystemUpdate } from '@material-ui/icons';
 import NumericInput from 'react-numeric-input';
 
 
@@ -33,14 +32,12 @@ function App() {
           counter += 1;
         }
         return({Filter_Type: 'Player Name', Player_Name: 'Enter Player Name'} );
-        break;
       case "Between Games":
         if(nw){
           columns.push(["Filter_Type","Start_Season","Start_Week","End_Season","End_Week"]);
           counter += 1;
         }
         return({Filter_Type: 'Between Games',Start_Season: 2018, Start_Week: 1, End_Season: 2020, End_Week: 1});
-        break;
       case "Stat":
         if(nw){
           columns.push(["Filter_Type","Stat"]);
@@ -54,7 +51,6 @@ function App() {
           counter += 1;
         }
         return({Filter_Type: 'Position', Position: 'Select Position'});
-        break;
     }
   }
   const [inputFields, setInputFields] = useState([
@@ -65,22 +61,17 @@ function App() {
     const values = [...inputFields];
     values[index][event.target.name] = event.target.value;
     setInputFields(values);
-    columns = updateColumns();
-    filters_left= updateFilters();
   }
   const handleChangeDropdownInput = (index, name, event) =>{
     const values = [...inputFields];
     values[index][name] = event.value;
     setInputFields(values);
-    columns = updateColumns();
-    filters_left= updateFilters();
   }
 
   const handleChangeNumericInput = (index, name, event) => {
     const values = [...inputFields];
     values[index][name] = event
     setInputFields(values);
-    columns = updateColumns();
     
   }
 
@@ -92,7 +83,6 @@ function App() {
   const handleAddFields = (fieldType,index) => {
     console.log("add");
     setInputFields([...inputFields, createFields(fieldType, true)]);
-    columns = updateColumns();
     //handleTypeChange(index,fieldType);
   }
 
@@ -100,7 +90,6 @@ function App() {
     const values = [...inputFields];
     values.splice(index, 1);
     setInputFields(values);
-    columns = updateColumns();
     
 
   }
@@ -114,8 +103,6 @@ function App() {
       values[index] = createFields(e.value,false);
     }
     setInputFields(values);
-    columns = updateColumns();
-    filters_left = updateFilters();
   }
   function listAllProperties(o) {
     var objectToInspect;
