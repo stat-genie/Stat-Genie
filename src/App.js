@@ -8,80 +8,62 @@ import AddIcon from '@material-ui/icons/Add';
 import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
 import NumericInput from 'react-numeric-input';
-
-let player_fields;
-let team_fields = [{Team_Filter_Type: 'Team Name',Team_Name: 'Enter Team Name'}];
+let fields = {"By Player":[],"By Team":[{Team_Filter_Type: 'Name',Name: 'Enter Team Name'}]};
 const Query_Types = ['By Player','By Team'];
 let query_type = Query_Types[0];
+let filters_left = {};
 
 function App() {
   console.log("start app");
   let columns = [];
   let counter;
   counter=0;
-  
-  const Player_Filter_Types = ['Player Name', 'Between Games', 'Stat', 'Position'];
-  const Team_Filter_Types = ['Team Name', 'Between Games','Stat'];
+  const Filter_Types = {"By Player":['Name', 'Between Games', 'Stat', 'Position'], "By Team":['Name', 'Between Games','Stat']};
   const num_cols = ["Start_Season","Start_Week","End_Season","End_Week"];
   const dropdown_cols = ["Stat", "Position"];
   const stats = ["Passing Yards","Passing TD","Rushing Yards","Rushing TDs","Receptions",
                 "Receiving Yards", "Receiving TDS"];
   const positions = ["QB","RB","WR","TE","K"];
+  const default_filters =  { Player_Filter_Type: 'Name', Name: 'Enter Player Name'};
 
 
   function createFields(filtType, nw) {
     switch(filtType){
-      case "Player Name":
+      case "Name":
         if(nw){
-          columns.push(["Player_Filter_Type", "Player_Name"]);
+          columns.push([query_type.split(" ")[1] + "_Filter_Type", query_type.split(" ")[1] + "_Name"]);
           counter += 1;
         }
-        return({Filter_Type: 'Player Name', Player_Name: 'Enter Player Name'} );
+        return({Filter_Type: query_type.split(" ")[1] + ' Name', [query_type.split(" ")[1] + '_Name']: 'Enter '+ query_type.split(" ")[1] + ' Name'} );
       case "Between Games":
         if(nw){
-          if(query_type==="By Player"){
-            columns.push(["Player_Filter_Type","Start_Season","Start_Week","End_Season","End_Week"]);
-          }else{
-            columns.push(["Team_Filter_Type","Start_Season","Start_Week","End_Season","End_Week"]);
-          
-          }
+          columns.push([query_type.split(" ")[1] + "_Filter_Type","Start_Season","Start_Week","End_Season","End_Week"]);
           counter += 1;
         }
-        if(query_type==="By Player"){
-          return({Player_Filter_Type: 'Between Games',Start_Season: 2018, Start_Week: 1, End_Season: 2020, End_Week: 1});
-        }else{
-          return({Team_Filter_Type: 'Between Games',Start_Season: 2018, Start_Week: 1, End_Season: 2020, End_Week: 1});
-        }
+        return({[query_type.split(" ")[1] + "_Filter_Type"]: filtType, Start_Season: 2018, Start_Week: 1, End_Season: 2020, End_Week: 1});
       case "Team Name":
         columns.push(["Team_Filter_Type", "Team_Name"]);
         counter += 1;
         return({Team_Filter_Type: 'Team Name', Team_Name: 'Enter Team Name'} );
       default:
         if(nw){
-          if(query_type==="By Player"){ 
-            columns.push(["Player_Filter_Type",filtType]);
-          }else{
-            columns.push(["Team_Filter_Type",filtType]);
-          }
+          columns.push([query_type.split(" ")[1] + "_Filter_Type",filtType]);
           counter += 1;
         }
-        if(query_type==="By Player"){ 
-          return({Player_Filter_Type: filtType, [filtType]: 'Select Position'});
-        }else{
-          return({Team_Filter_Type: filtType, [filtType]: 'Select Position'});
-        }
+        return({[query_type.split(" ")[1] + "_Filter_Type"]: filtType, [filtType]: 'Select ' + filtType});
     }
   }
 
-  
   const [inputFields, setInputFields] = useState([
-    { Player_Filter_Type: 'Player Name', Player_Name: 'Enter Player Name'},
+    default_filters,
   ]);
+
   const handleChangeInput = (index, event) =>{
     const values = [...inputFields];
     values[index][event.target.name] = event.target.value;
     setInputFields(values);
   }
+
   const handleChangeDropdownInput = (index, name, event) =>{
     const values = [...inputFields];
     values[index][name] = event.value;
@@ -95,29 +77,21 @@ function App() {
     
   }
 
-
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("InputFields",inputFields)
   }
+
   const handleAddFields = () => {
     console.log("add");
-    let fieldType;
-    if(query_type==="By Player"){
-      fieldType = player_filters_left[player_filters_left.length-1][0];
-    }else{
-      fieldType = team_filters_left[team_filters_left.length-1][0];
-    }
+    let fieldType = filters_left[query_type][filters_left[query_type].length-1][0];
     setInputFields([...inputFields, createFields(fieldType, true)]);
-    //handleTypeChange(index,fieldType);
   }
 
   const handleRemoveFields = (index) => {
     const values = [...inputFields];
     values.splice(index, 1);
     setInputFields(values);
-    
-
   }
 
   const handleTypeChange = (index, e) => {
@@ -132,33 +106,12 @@ function App() {
   }
 
   const handleQueryTypeChange = (event) => {
-    switch(query_type){
-      case "By Player":
-        player_fields =  [...inputFields];
-        break;
-      case "By Team":
-        console.log(team_fields)
-        console.log(inputFields)
-        //team_fields = [...inputFields];
-        break;
-      default:
-        break;
-    }
+    fields[query_type] = [...inputFields];
     query_type = event.value ;
-    switch(query_type){
-      case "By Player":
-        setInputFields(player_fields);
-        console.log(inputFields);
-        break;
-      case "By Team":
-        setInputFields(team_fields);
-        console.log(inputFields);
-        break;
-      default:
-        break;
-    }
+    setInputFields(fields[query_type]);
   }
-  function listAllProperties(o) {
+
+  const listAllProperties = (o) => {
     var objectToInspect;
     var result = [];
   
@@ -167,7 +120,6 @@ function App() {
       Object.getOwnPropertyNames(objectToInspect)
       );
     }
-  
     return result;
   }
   if(columns.length === 0 && query_type==="By Player" ){
@@ -175,49 +127,28 @@ function App() {
     counter += 1;
   }
 
-  function updateColumns() {
+  const updateColumns = () => {
     let c = [];
     for( let i=0; i<inputFields.length;i++){
       let l = listAllProperties(inputFields[i]).length -12 ;
       c.push(listAllProperties(inputFields[i]).slice(0,l));
     }
     return(c);
-    
   }
-  let player_filters_left = [];
-  let team_filters_left = [];
-  function updateFilters(){
+
+  const updateFilters = () => {
     let filts = [];
-    switch(query_type){
-      case "By Player":
-        for(let n=0;n<inputFields.length;n++){
-          filts[n] = Player_Filter_Types;
-          for( let i=0; i<n;i++){
-            const where = filts[n].indexOf(inputFields[i]["Player_Filter_Type"].replace('_',' '));
-            if (where > -1) {
-              const x = [...filts[n]];
-              x.splice(where,1);
-              filts[n] = x;
-            }
-          }
+    for(let n=0;n<inputFields.length;n++){
+      filts[n] = Filter_Types[query_type];
+      for( let i=0; i<n;i++){
+        const where = filts[n].indexOf(inputFields[i][query_type.split(" ")[1] + "_Filter_Type"].replace('_',' '));
+        if (where > -1) {
+          const x = [...filts[n]];
+          x.splice(where,1);
+          filts[n] = x;
         }
-        break;
-      case "By Team":
-        for(let n=0;n<inputFields.length;n++){
-          filts[n] = Team_Filter_Types;
-          for( let i=0; i<n;i++){
-            const where = filts[n].indexOf(inputFields[i]["Team_Filter_Type"].replace('_',' '));
-            if (where > -1) {
-              const x = [...filts[n]];
-              x.splice(where,1);
-              filts[n] = x;
-            }
-          }
-        }
-        break;
-      default:
-        break;
       }
+    }
     return(filts);
     }
 
@@ -263,27 +194,13 @@ function App() {
     }
   }
   const filter = (index,n) => {
-    if(query_type==="By Player"){
-      player_filters_left= updateFilters();
-    }else{
-      team_filters_left= updateFilters();
-    }
-    
-    if(columns[index][n]==="Player_Filter_Type"){
+    filters_left[query_type] = updateFilters();
+    if(columns[index][n].includes("Filter_Type")){
       return(
         <Dropdown 
         name={columns[index][n]}
-        options={player_filters_left[index]} 
-        value={player_filters_left[index][0]} 
-        onChange = {event => handleTypeChange(index, event)}
-        />
-        );
-    } else if(columns[index][n]==="Team_Filter_Type"){
-      return(
-        <Dropdown 
-        name={columns[index][n]}
-        options={team_filters_left[index]} 
-        value={team_filters_left[index][0]} 
+        options={filters_left[query_type][index]} 
+        value={filters_left[query_type][index][0]} 
         onChange = {event => handleTypeChange(index, event)}
         />
         );
@@ -327,7 +244,6 @@ function App() {
 
   const filters = (index) => {
     columns = updateColumns();
-    console.log(columns);
     let out=[]
     if(typeof columns[index] == "undefined"){
       console.log("undefined columns");
@@ -351,7 +267,6 @@ function App() {
     )
   }
 
-  console.log(inputFields);
     return(
       <Container>
         <h1>New Filter</h1>
