@@ -18,12 +18,13 @@ function App() {
   let columns = [];
   let counter;
   counter=0;
-  const Filter_Types = {"By Player":['Name', 'Between Games', 'Stat', 'Position'], "By Team":['Name', 'Between Games','Stat']};
-  const num_cols = ["Start_Season","Start_Week","End_Season","End_Week"];
-  const dropdown_cols = ["Stat", "Position"];
+  const Filter_Types = {"By Player":['Name', 'Between Games', 'Stat', 'Position', 'Opponent'], "By Team":['Name', 'Between Games','Stat']};
+  const num_cols = ["Start_Season","Start_Week","End_Season","End_Week", "Threshold"];
+  const dropdown_cols = ["Stat", "Position", "Top"];
   const stats = ["Passing Yards","Passing TD","Rushing Yards","Rushing TDs","Receptions",
                 "Receiving Yards", "Receiving TDS"];
   const positions = ["QB","RB","WR","TE","K"];
+  const dropdowns = {"Stat": stats, "Position": positions, "Top": ["Top","Bottom"]};
   const default_filters =  { Player_Filter_Type: 'Name', Name: 'Enter Player Name'};
 
 
@@ -31,20 +32,22 @@ function App() {
     switch(filtType){
       case "Name":
         if(nw){
-          columns.push([query_type.split(" ")[1] + "_Filter_Type", query_type.split(" ")[1] + "_Name"]);
+          columns.push([query_type.split(" ")[1] + "_Filter_Type", "Name"]);
           counter += 1;
         }
-        return({Filter_Type: query_type.split(" ")[1] + ' Name', [query_type.split(" ")[1] + '_Name']: 'Enter '+ query_type.split(" ")[1] + ' Name'} );
+        return({[query_type.split(" ")[1] + "_Filter_Type"]: filtType, Name: 'Enter '+ query_type.split(" ")[1] + ' Name'} );
       case "Between Games":
         if(nw){
           columns.push([query_type.split(" ")[1] + "_Filter_Type","Start_Season","Start_Week","End_Season","End_Week"]);
           counter += 1;
         }
         return({[query_type.split(" ")[1] + "_Filter_Type"]: filtType, Start_Season: 2018, Start_Week: 1, End_Season: 2020, End_Week: 1});
-      case "Team Name":
-        columns.push(["Team_Filter_Type", "Team_Name"]);
-        counter += 1;
-        return({Team_Filter_Type: 'Team Name', Team_Name: 'Enter Team Name'} );
+      case "Opponent":
+        if(nw){
+          columns.push([query_type.split(" ")[1] + "_Filter_Type","Threshold","Stat"]);
+          counter += 1;
+        }
+        return({[query_type.split(" ")[1] + "_Filter_Type"]: filtType, Top: "Top", Threshold:  32, Stat: 'Select Stat'});
       default:
         if(nw){
           columns.push([query_type.split(" ")[1] + "_Filter_Type",filtType]);
@@ -61,18 +64,21 @@ function App() {
   const handleChangeInput = (index, event) =>{
     const values = [...inputFields];
     values[index][event.target.name] = event.target.value;
+    filters_left[query_type] = updateFilters(values);
     setInputFields(values);
   }
 
   const handleChangeDropdownInput = (index, name, event) =>{
     const values = [...inputFields];
     values[index][name] = event.value;
+    filters_left[query_type] = updateFilters(values);
     setInputFields(values);
   }
 
   const handleChangeNumericInput = (index, name, event) => {
     const values = [...inputFields];
     values[index][name] = event
+    filters_left[query_type] = updateFilters(values);
     setInputFields(values);
     
   }
@@ -82,15 +88,20 @@ function App() {
     console.log("InputFields",inputFields)
   }
 
-  const handleAddFields = () => {
+  const handleAddFields = (index) => {
     console.log("add");
-    let fieldType = filters_left[query_type][filters_left[query_type].length-1][0];
-    setInputFields([...inputFields, createFields(fieldType, true)]);
+    let fieldType = filters_left[query_type][index+1][0];
+    let newField = createFields(fieldType, true);
+    let values =[...inputFields];
+    values.push(newField);
+    filters_left[query_type] = updateFilters(values);
+    setInputFields(values);
   }
 
   const handleRemoveFields = (index) => {
     const values = [...inputFields];
     values.splice(index, 1);
+    filters_left[query_type] = updateFilters(values);
     setInputFields(values);
   }
 
@@ -102,12 +113,14 @@ function App() {
     }else{
       values[index] = createFields(e.value,false);
     }
+    filters_left[query_type] = updateFilters(values);
     setInputFields(values);
   }
 
   const handleQueryTypeChange = (event) => {
     fields[query_type] = [...inputFields];
     query_type = event.value ;
+    filters_left[query_type] = updateFilters(fields[query_type]);
     setInputFields(fields[query_type]);
   }
 
@@ -136,16 +149,22 @@ function App() {
     return(c);
   }
 
-  const updateFilters = () => {
+  const updateFilters = ( values ) => {
+    console.log("updating filters...");
     let filts = [];
-    for(let n=0;n<inputFields.length;n++){
+    console.log(Object.keys(values).length);
+    for(let n=0;n<= Object.keys(values).length ;n++){
       filts[n] = Filter_Types[query_type];
       for( let i=0; i<n;i++){
-        const where = filts[n].indexOf(inputFields[i][query_type.split(" ")[1] + "_Filter_Type"].replace('_',' '));
-        if (where > -1) {
-          const x = [...filts[n]];
-          x.splice(where,1);
-          filts[n] = x;
+        if(typeof values[i][query_type.split(" ")[1] + "_Filter_Type"]=="undefined"){
+          console.log("undefined");
+        }else{
+          const where = filts[n].indexOf(values[i][query_type.split(" ")[1] + "_Filter_Type"].replace('_',' '));
+          if (where > -1) {
+            const x = [...filts[n]];
+            x.splice(where,1);
+            filts[n] = x;
+          }
         }
       }
     }
@@ -163,6 +182,8 @@ function App() {
         return(2018);
       case "End_Season":
         return(2018);
+      case "Top":
+        return(1);
       default:
         break;
     }
@@ -177,6 +198,8 @@ function App() {
           return(2020);
         case "End_Season":
           return(2020);
+        case "Top":
+          return(32);
         default:
           break;
       }
@@ -193,8 +216,11 @@ function App() {
         break;
     }
   }
+
   const filter = (index,n) => {
-    filters_left[query_type] = updateFilters();
+    if(typeof filters_left[query_type] =="undefined"){
+      filters_left[query_type] = updateFilters(inputFields);
+    }
     if(columns[index][n].includes("Filter_Type")){
       return(
         <Dropdown 
@@ -208,15 +234,14 @@ function App() {
       return(
         <Dropdown 
         name={columns[index][n]}
-        options={get_options(columns[index][n])} 
-        value={get_options(columns[index][n])[0]} 
+        options={dropdowns[columns[index][n]]} 
+        value={dropdowns[columns[index][n]][0]} 
         onChange = {event => handleChangeDropdownInput(index, columns[index][n], event)}
         />
         );
     } else if(num_cols.includes(columns[index][n])){
         return([
-          ///<label {columns[index][n]}></label>
-          <label>{columns[index][n].replace('_',' ')}</label>,
+          <label>{columns[index][n].replace('_',' ').replace('Threshold','')}</label>,
           <NumericInput
           min={calc_min(columns[index][n])}
           max={calc_max(columns[index][n])}
@@ -228,7 +253,6 @@ function App() {
         ]
         );
     }else{
-      console.log(columns[index][n]);
       return(
         <TextField
         name={columns[index][n]}
@@ -243,6 +267,7 @@ function App() {
 
 
   const filters = (index) => {
+    console.log("updating filters");
     columns = updateColumns();
     let out=[]
     if(typeof columns[index] == "undefined"){
@@ -269,21 +294,23 @@ function App() {
 
     return(
       <Container>
-        <h1>New Filter</h1>
+        <h1>New Search</h1>
         <form>
           <div key="query_bar">
             {query_bar()}
           </div>
+          <br></br><br></br>
           { inputFields.map((inputFields, index) => (
             <div key={index}>
               {filters(index)}  
+              <br></br>
               <IconButton
                 onClick = {() => handleRemoveFields(index)}
               >
                 <RemoveIcon></RemoveIcon>
               </IconButton>
               <IconButton
-                onClick={() => handleAddFields()}
+                onClick={() => handleAddFields(index)}
               >
                 <AddIcon>
                 </AddIcon>
