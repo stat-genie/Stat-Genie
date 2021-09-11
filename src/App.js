@@ -9,6 +9,8 @@ import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
 import NumericInput from 'react-numeric-input';
 
+console.log("top of script");
+
 //types of queries allowed
 const Query_Types = [['Player','Team'],["Offense","Defense"]];
 
@@ -27,9 +29,9 @@ let fields = {"Player":[],"Team":[{Team_Filter_Type: 'Name',Name: 'Enter Team Na
 let filters_left = {};
 
 //fields with numeric values
-const num_cols = ["Start_Season","Start_Week","End_Season","End_Week", "Threshold","Min_Experience","Max_Experience"];
-let minimums = {"Start_Week":1,"End_Week": 1, "Start_Season":2018, "End_Season": 2018,"Threshold":1,"Min_Experience":0,"Max_Experience":0};
-let maximums = {"Start_Week":17,"End_Week": 17, "Start_Season":2020, "End_Season":2020,"Threshold":32,"Min_Experience":30,"Max_Experience":30};
+const num_cols = ["Start_Season","Start_Week","End_Season","End_Week", "Threshold","Min_Experience","Max_Experience","Min_Age","Max_Age"];
+let minimums = {"Start_Week":1,"End_Week": 1, "Start_Season":2018, "End_Season": 2018,"Threshold":1,"Min_Experience":0,"Max_Experience":0,"Min_Age":18,"Max_Age":18};
+let maximums = {"Start_Week":17,"End_Week": 17, "Start_Season":2020, "End_Season":2020,"Threshold":32,"Min_Experience":30,"Max_Experience":30,"Min_Age":50,"Max_Age":50};
 
 //array of filters
 let columns = [];
@@ -38,8 +40,9 @@ let columns = [];
 let counter =0;
 
 //Filter types allowed
-const Filter_Types = {"Player":['Name', 'Between Weeks', 'Stat', 'Position','Experience', 'Opponent'], "Team":['Name', 'Between Weeks','Stat', 'Position','Opponent']};
+const Filter_Types = {"Player":['Name', 'Between Weeks', 'Stat', 'Position','Experience', 'Age', 'Opponent'], "Team":['Name', 'Between Weeks','Stat','Opponent']};
 
+//add month field? *****************
 
 //fields with dropdown values
 const dropdown_cols = ["Stat", "Position", "Top"];
@@ -61,6 +64,7 @@ const dropdowns = {"Stat": stats, "Position": positions, "Top": top};
 const default_filters =  { Player_Filter_Type: 'Name', Name: 'Enter Player Name'};
 
 const default_rules = [ 
+                        {"showRules": false},
                         {"PPR": 0},
                         {"Passing_TD": 4},
                         {"Rushing_TD": 6},
@@ -69,6 +73,7 @@ const default_rules = [
                         {"Rushing_Yard_Per_Point": 10},
                         {"Passing_Yard_Per_Point": 25 }
                       ];
+
 
 
 function App() {
@@ -102,6 +107,12 @@ function App() {
           counter += 1;
         }
         return({[query_type + "_Filter_Type"]: filtType, Min_Experience: 0, Max_Experience: 30});
+      case "Age":
+        if(nw){
+          columns.push([query_type + "_Filter_Type","Min_Age","Max_Age"]);
+          counter += 1;
+        }
+        return({[query_type + "_Filter_Type"]: filtType, Min_Age: 18, Max_Age: 50});  
       default:
         if(nw){
           columns.push([query_type + "_Filter_Type",filtType]);
@@ -128,7 +139,6 @@ function App() {
     filters_left[query_type] = updateFilters(values);
     setInputFields(values);
   }
-  console.log(default_rules);
 
   //do this when dropdown is selected
   const handleChangeDropdownInput = (index, name, event) =>{
@@ -173,6 +183,13 @@ function App() {
           maximums["Min_Experience"] = values[index]["Max_Experience"];
         }
         break;
+      case "Age":
+        if(name==="Min_Age"){
+          minimums["Max_Age"] = values[index]["Min_Age"];
+        }else{
+          maximums["Min_Age"] = values[index]["Max_Age"];
+        }
+        break;
       default:
         break;
     }
@@ -184,6 +201,18 @@ function App() {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("InputFields",inputFields)
+  }
+
+  const handleRuleButton = () => {
+    console.log("handleRuleButton");
+    const values = [...fantasyRules];
+    let s = values[0]["showRules"];
+    if(s){
+      values[0]["showRules"] = false;
+    }else{
+      values[0]["showRules"] = true;
+    }
+    setFantasyRules(values);
   }
 
   //do this when add button clicked
@@ -220,6 +249,7 @@ function App() {
     setInputFields(values);
   }
 
+
   //do this when query type is changed
   const handleQueryTypeChange = (event) => {
     fields[query_type] = [...inputFields];
@@ -237,8 +267,6 @@ function App() {
   const handleRuleChange = (index,rule, value) => {
     const values = [...fantasyRules];
     values[index][rule] = value;
-    console.log(fantasyRules);
-    console.log(inputFields);
     //setFantasyRules[values];
   }
 
@@ -353,7 +381,7 @@ function App() {
   //input row of master fields list
   //returns html fields
   const filters = (index) => {
-    console.log("updating filters");
+    console.log("constructing filters");
     columns = updateColumns(inputFields);
     let out=[]
     if(typeof columns[index] == "undefined"){
@@ -385,13 +413,37 @@ function App() {
   const rules = () => {
     console.log("updating rules");
     let out = [];
-    for(let i=0; i<fantasyRules.length;i++){
-      console.log(listAllProperties(fantasyRules[i])[0]);
-      out.push(rule(listAllProperties(fantasyRules[i])[0].replaceAll('_',' '),i));
+    if(fantasyRules[0]["showRules"]){
+      for(let i=1; i<fantasyRules.length;i++){
+        out.push(rule(listAllProperties(fantasyRules[i])[0].replaceAll('_',' '),i));
+      }
     }
     return(out);
   }
 
+  const ruleButton = () => {
+    console.log("making rule Button");
+    let show = fantasyRules[0]["showRules"];
+    if(show){
+      return(
+        <Button 
+            variant="contained" 
+            onClick={handleRuleButton}
+            >
+            Hide Rules
+        </Button>
+      );
+    }else{
+      return(
+        <Button 
+            variant="contained" 
+            onClick={handleRuleButton}
+            >
+            Show Rules
+        </Button>
+      )
+    }
+  }
   //top dropdown for types of queries
   const query_bar = () => {
     return(
@@ -449,6 +501,8 @@ function App() {
         <h1>Fantasy Rules</h1>
         <form>
           <div key={"Rules"}>
+            {ruleButton()}
+            <br></br>
             {rules()}  
             </div>
         </form>
