@@ -15,6 +15,7 @@ const Query_Types = [['Player','Team'],["Offense","Defense"]];
 //current /default query type
 let query_type = Query_Types[0][0];
 let side = Query_Types[1][0];
+let statside;
 
 //master fields list, used to generate UI
 //dictionary, keys = query type, values are dictionaries containing 
@@ -26,41 +27,52 @@ let fields = {"Player":[],"Team":[{Team_Filter_Type: 'Name',Name: 'Enter Team Na
 let filters_left = {};
 
 //fields with numeric values
-const num_cols = ["Start_Season","Start_Week","End_Season","End_Week", "Threshold"];
-let minimums = {"Start_Week":1,"End_Week": 1, "Start_Season":2018, "End_Season": 2018,"Threshold":1};
-let maximums = {"Start_Week":17,"End_Week": 17, "Start_Season":2020, "End_Season":2020,"Threshold":32};
+const num_cols = ["Start_Season","Start_Week","End_Season","End_Week", "Threshold","Min_Experience","Max_Experience"];
+let minimums = {"Start_Week":1,"End_Week": 1, "Start_Season":2018, "End_Season": 2018,"Threshold":1,"Min_Experience":0,"Max_Experience":0};
+let maximums = {"Start_Week":17,"End_Week": 17, "Start_Season":2020, "End_Season":2020,"Threshold":32,"Min_Experience":30,"Max_Experience":30};
+
+//array of filters
+let columns = [];
+
+//counter for initial startup
+let counter =0;
+
+//Filter types allowed
+const Filter_Types = {"Player":['Name', 'Between Weeks', 'Stat', 'Position','Experience', 'Opponent'], "Team":['Name', 'Between Weeks','Stat', 'Position','Opponent']};
+
+
+//fields with dropdown values
+const dropdown_cols = ["Stat", "Position", "Top"];
+
+//available options
+const stats = {"Offense": ["Passing Yards","Passing TDs","Rushing Yards","Rushing TDs","Receptions",
+              "Receiving Yards", "Receiving TDs"],
+              "Defense": ["Passing Yards Against","Passing TDs Against","Rushing Yards Against",
+              "Receptions Against","Receiving Yards Against","Receiving TDs Against"]};
+const positions = {"Offense": ["QB","RB","WR","TE","K"],
+                  "Defense": ["DE","DT","MLB","OLB","CB","SS","FS"]};
+const top = {"Offense": ["Top","Bottom"],
+              "Defense":["Top","Bottom"]};
+
+//dictionary, key = field type, value = options
+const dropdowns = {"Stat": stats, "Position": positions, "Top": top};
+
+//default field type
+const default_filters =  { Player_Filter_Type: 'Name', Name: 'Enter Player Name'};
+
+const default_rules = [ 
+                        {"PPR": 0},
+                        {"Passing_TD": 4},
+                        {"Rushing_TD": 6},
+                        {"Receiving_TD": 6},
+                        {"Recieving_Yard_Per_Point": 10},
+                        {"Rushing_Yard_Per_Point": 10},
+                        {"Passing_Yard_Per_Point": 25 }
+                      ];
+
 
 function App() {
   console.log("start app");
-  //array of filters
-  let columns = [];
-
-  //counter for initial startup
-  let counter =0;
-  
-  //Filter types allowed
-  const Filter_Types = {"Player":['Name', 'Between Games', 'Stat', 'Position', 'Opponent'], "Team":['Name', 'Between Games','Stat']};
-  
-
-  //fields with dropdown values
-  const dropdown_cols = ["Stat", "Position", "Top"];
-  
-  //available options
-  const stats = {"Offense": ["Passing Yards","Passing TDs","Rushing Yards","Rushing TDs","Receptions",
-                "Receiving Yards", "Receiving TDs"],
-                "Defense": ["Passing Yards Against","Passing TDs Against","Rushing Yards Against",
-                "Receptions Against","Receiving Yards Against","Receiving TDs Against"]};
-  const positions = {"Offense": ["QB","RB","WR","TE","K"],
-                    "Defense": ["DE","DT","MLB","OLB","CB","SS","FS"]};
-  const top = {"Offense": ["Top","Bottom"],
-                "Defense":["Top","Bottom"]};
-
-  //dictionary, key = field type, value = options
-  const dropdowns = {"Stat": stats, "Position": positions, "Top": top};
-
-  //default field type
-  const default_filters =  { Player_Filter_Type: 'Name', Name: 'Enter Player Name'};
-
 
   //input type of filter, 
   //returns row to add to master fields
@@ -72,7 +84,7 @@ function App() {
           counter += 1;
         }
         return({[query_type + "_Filter_Type"]: filtType, Name: 'Enter '+ query_type + ' Name'} );
-      case "Between Games":
+      case "Between Weeks":
         if(nw){
           columns.push([query_type + "_Filter_Type","Start_Season","Start_Week","End_Season","End_Week"]);
           counter += 1;
@@ -84,6 +96,12 @@ function App() {
           counter += 1;
         }
         return({[query_type + "_Filter_Type"]: filtType, Top: "Top", Threshold:  32, Stat: 'Select Stat'});
+      case "Experience":
+        if(nw){
+          columns.push([query_type + "_Filter_Type","Min_Experience","Max_Experience"]);
+          counter += 1;
+        }
+        return({[query_type + "_Filter_Type"]: filtType, Min_Experience: 0, Max_Experience: 30});
       default:
         if(nw){
           columns.push([query_type + "_Filter_Type",filtType]);
@@ -99,6 +117,10 @@ function App() {
     default_filters,
   ]);
 
+  const [fantasyRules, setFantasyRules] = useState(
+    default_rules
+  );
+
   //do this when user types in text field (every input, not just submit)
   const handleChangeInput = (index, event) =>{
     const values = [...inputFields];
@@ -106,6 +128,7 @@ function App() {
     filters_left[query_type] = updateFilters(values);
     setInputFields(values);
   }
+  console.log(default_rules);
 
   //do this when dropdown is selected
   const handleChangeDropdownInput = (index, name, event) =>{
@@ -120,26 +143,40 @@ function App() {
     const values = [...inputFields];
     values[index][name] = event
     filters_left[query_type] = updateFilters(values);
-    if(values[index]["End_Week"] < values[index]["Start_Week"]){
-    }else{
-      switch(name){
-        case "Start_Season":
-          minimums["End_Season"] = event;
-          break;
-        case "End_Season":
-          maximums["Start_Season"] = event;
-          break;
-        default:
-          break;
-      }
+    switch(values[index]["Player_Filter_Type"]){
+      case "Between Weeks":
+        if(values[index]["End_Week"] < values[index]["Start_Week"]){
+        }else{
+          switch(name){
+            case "Start_Season":
+              minimums["End_Season"] = event;
+              break;
+            case "End_Season":
+              maximums["Start_Season"] = event;
+              break;
+            default:
+              break;
+          }
+        }
+        if(values[index]["Start_Season"]===values[index]["End_Season"]){
+            minimums["End_Week"] = values[index]["Start_Week"];
+            maximums["Start_Week"] = values[index]["End_Week"];
+        }else{
+          minimums["End_Week"] = 1;
+          maximums["Start_Week"] = 17;
+        }
+        break;
+      case "Experience":
+        if(name==="Min_Experience"){
+          minimums["Max_Experience"] = values[index]["Min_Experience"];
+        }else{
+          maximums["Min_Experience"] = values[index]["Max_Experience"];
+        }
+        break;
+      default:
+        break;
     }
-    if(values[index]["Start_Season"]===values[index]["End_Season"]){
-        minimums["End_Week"] = values[index]["Start_Week"];
-        maximums["Start_Week"] = values[index]["End_Week"];
-    }else{
-      minimums["End_Week"] = 1;
-      maximums["Start_Week"] = 17;
-    }
+    
     setInputFields(values);
   }
 
@@ -179,6 +216,7 @@ function App() {
       values[index] = createFields(e.value,false);
     }
     filters_left[query_type] = updateFilters(values);
+    columns = updateColumns(values);
     setInputFields(values);
   }
 
@@ -194,6 +232,14 @@ function App() {
     side = event.value ;
     const values = [...inputFields];
     setInputFields(values);
+  }
+
+  const handleRuleChange = (index,rule, value) => {
+    const values = [...fantasyRules];
+    values[index][rule] = value;
+    console.log(fantasyRules);
+    console.log(inputFields);
+    //setFantasyRules[values];
   }
 
   //helper function, returns all keys,methods,etc for any object
@@ -213,11 +259,11 @@ function App() {
   }
 
   //updates columns list using master input fields
-  const updateColumns = () => {
+  const updateColumns = (v) => {
     let c = [];
-    for( let i=0; i<inputFields.length;i++){
-      let l = listAllProperties(inputFields[i]).length -12 ;
-      c.push(listAllProperties(inputFields[i]).slice(0,l));
+    for( let i=0; i<v.length;i++){
+      let l = listAllProperties(v[i]).length -12 ;
+      c.push(listAllProperties(v[i]).slice(0,l));
     }
     return(c);
   }
@@ -262,12 +308,20 @@ function App() {
         />
         );
     } else if(dropdown_cols.includes(columns[index][n])){
-      console.log(columns[index][n]);
+      if(inputFields[index]["Player_Filter_Type"]=="Opponent"){
+        if(side=="Defense"){
+          statside = "Offense";
+        }else{
+          statside = "Defense";
+        }
+      }else{
+        statside= side;
+      }
       return(
         <Dropdown 
         name={columns[index][n]}
-        options={dropdowns[columns[index][n]][side]} 
-        value={dropdowns[columns[index][n]][side][0]} 
+        options={dropdowns[columns[index][n]][statside]} 
+        value={dropdowns[columns[index][n]][statside][0]} 
         onChange = {event => handleChangeDropdownInput(index, columns[index][n], event)}
         />
         );
@@ -300,7 +354,7 @@ function App() {
   //returns html fields
   const filters = (index) => {
     console.log("updating filters");
-    columns = updateColumns();
+    columns = updateColumns(inputFields);
     let out=[]
     if(typeof columns[index] == "undefined"){
       console.log("undefined columns");
@@ -308,6 +362,32 @@ function App() {
         for(let i = 0;i<columns[index].length;i++){
           out.push(filter(index,i));
       }
+    }
+    return(out);
+  }
+
+  const rule = (n,index) => {
+    return([
+      <label>{n}</label>,
+      <NumericInput
+      min={0}
+      //max={maximums[columns[index][n]]}
+      name={n}
+      label={n}
+      value = {default_rules[index][listAllProperties(fantasyRules[index])[0]]}
+      onChange={event => handleRuleChange(index,n,event)}>
+      </NumericInput>
+    ]
+    );
+
+  }
+
+  const rules = () => {
+    console.log("updating rules");
+    let out = [];
+    for(let i=0; i<fantasyRules.length;i++){
+      console.log(listAllProperties(fantasyRules[i])[0]);
+      out.push(rule(listAllProperties(fantasyRules[i])[0].replaceAll('_',' '),i));
     }
     return(out);
   }
@@ -365,6 +445,12 @@ function App() {
             >
             Search
           </Button>
+        </form>
+        <h1>Fantasy Rules</h1>
+        <form>
+          <div key={"Rules"}>
+            {rules()}  
+            </div>
         </form>
       </Container>
     )
