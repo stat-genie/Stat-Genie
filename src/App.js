@@ -74,6 +74,18 @@ const default_rules = [
                         {"Passing_Yard_Per_Point": 25 }
                       ];
 
+const default_roster = [
+                        {"showRoster": false},
+                        {"QB":1},
+                        {"RB":2},
+                        {"WR":2},
+                        {"TE":1},
+                        {"Flex":1},
+                        {"K":1},
+                        {"Def":1},
+                        {"Bench":6},
+                        {"Flex Positions": ["RB","WR","TE"]}
+]
 
 
 function App() {
@@ -130,6 +142,10 @@ function App() {
 
   const [fantasyRules, setFantasyRules] = useState(
     default_rules
+  );
+
+  const [fantasyRoster, setFantasyRoster] = useState(
+    default_roster,
   );
 
   //do this when user types in text field (every input, not just submit)
@@ -205,7 +221,7 @@ function App() {
 
   const handleRuleButton = () => {
     console.log("handleRuleButton");
-    const values = [...fantasyRules];
+    let values = [...fantasyRules];
     let s = values[0]["showRules"];
     if(s){
       values[0]["showRules"] = false;
@@ -214,6 +230,19 @@ function App() {
     }
     setFantasyRules(values);
   }
+
+  const handleRosterButton = () => {
+    console.log("handleRosterButton");
+    let values = [...fantasyRoster];
+    let s = values[0]["showRoster"];
+    if(s){
+      values[0]["showRoster"] = false;
+    }else{
+      values[0]["showRoster"] = true;
+    }
+    setFantasyRoster(values);
+  }
+
 
   //do this when add button clicked
   //takes index as input to keep track of which options remain
@@ -268,6 +297,21 @@ function App() {
     const values = [...fantasyRules];
     values[index][rule] = value;
     //setFantasyRules[values];
+  }
+
+  const handleRosterChange = (index,spot, value) => {
+    const values = [...fantasyRoster];
+    values[index][spot] = value;
+    setFantasyRoster(values);
+  }
+
+  const handleFlexChange = (position) => {
+    const index = fantasyRoster[fantasyRoster.length-1]["Flex Positions"].indexOf(position);
+    if (index > -1) {
+      fantasyRoster[fantasyRoster.length-1]["Flex Positions"].splice(index, 1);
+    }else{
+      fantasyRoster[fantasyRoster.length-1]["Flex Positions"].push(position);
+    }
   }
 
   //helper function, returns all keys,methods,etc for any object
@@ -407,7 +451,6 @@ function App() {
       </NumericInput>
     ]
     );
-
   }
 
   const rules = () => {
@@ -444,6 +487,91 @@ function App() {
       )
     }
   }
+
+  const rosterSpot = (n,index) => {
+    return([
+      <label>{n}</label>,
+      <NumericInput
+      min={0}
+      //max={maximums[columns[index][n]]}
+      name={n}
+      label={n}
+      value = {default_roster[index][listAllProperties(fantasyRoster[index])[0]]}
+      onChange={event => handleRosterChange(index,n,event)}>
+      </NumericInput>
+    ]
+    );
+  }
+
+  const flexTick = (s) => {
+    return([
+      <label>{s}</label>,
+      <input 
+        name={s}
+        label={s}
+        type="checkbox"
+        defaultChecked={fantasyRoster[fantasyRoster.length-1]["Flex Positions"].includes(s)} 
+        onChange = {event => handleFlexChange(s)}
+        />,
+    ])
+  }
+
+  const flexOptions = (s) => {
+    let out = [];
+    for(let i=0; i<s.length;i++){
+      out.push(flexTick(s[i]));
+    }
+    return(out);
+  }
+
+
+  const roster = () => {
+    console.log("updating roster spots");
+    let out = [];
+    let spots = [];
+    if(fantasyRoster[0]["showRoster"]){
+      for(let i=1; i<fantasyRoster.length-1;i++){
+        out.push(rosterSpot(listAllProperties(fantasyRoster[i])[0],i));
+        if(listAllProperties(fantasyRoster[i])[0]=="Flex" || listAllProperties(fantasyRoster[i])[0]=="Bench" ){
+        }else{
+          spots.push(listAllProperties(fantasyRoster[i])[0]);
+        }
+      }
+      out.push(
+        [<br></br>,
+        <br></br>,
+        <label>Flex Positions</label>,
+        <br></br>]
+      );
+      out.push(flexOptions(spots));
+    }
+    return(out);
+  }
+
+  const rosterButton = () => {
+    console.log("making roster Button");
+    let show = fantasyRoster[0]["showRoster"];
+    if(show){
+      return(
+        <Button 
+            variant="contained" 
+            onClick={handleRosterButton}
+            >
+            Hide Roster
+        </Button>
+      );
+    }else{
+      return(
+        <Button 
+            variant="contained" 
+            onClick={handleRosterButton}
+            >
+            Show Roster
+        </Button>
+      )
+    }
+  }
+
   //top dropdown for types of queries
   const query_bar = () => {
     return(
@@ -498,14 +626,20 @@ function App() {
             Search
           </Button>
         </form>
-        <h1>Fantasy Rules</h1>
+        <h1>Fantasy</h1>
         <form>
           <div key={"Rules"}>
             {ruleButton()}
             <br></br>
             {rules()}  
             </div>
+          <div key={"Roster"}>
+          {rosterButton()}
+          <br></br>
+          {roster()}  
+          </div>
         </form>
+        
       </Container>
     )
 }
