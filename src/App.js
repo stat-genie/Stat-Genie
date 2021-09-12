@@ -83,7 +83,7 @@ const default_roster = [
                         {"K":1},
                         {"Def":1},
                         {"Bench":6},
-                        {"Flex Positions": ["RB","WR","TE"]}
+                        {"Flex Positions": ["RB","WR","TE","Def"]}
 ]
 
 
