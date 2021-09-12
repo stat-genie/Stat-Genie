@@ -42,7 +42,6 @@ let counter =0;
 //Filter types allowed
 const Filter_Types = {"Player":['Name', 'Between Weeks', 'Stat', 'Position','Experience', 'Age', 'Opponent'], "Team":['Name', 'Between Weeks','Stat','Opponent']};
 
-//add month field? *****************
 
 //fields with dropdown values
 const dropdown_cols = ["Stat", "Position", "Top"];
@@ -287,24 +286,29 @@ function App() {
     setInputFields(fields[query_type]);
   }
 
+  //do this when offense/defense changed
   const handleSideChange = (event) => {
     side = event.value ;
     const values = [...inputFields];
     setInputFields(values);
   }
 
+
+  //do this when rule numeric fields are changed
   const handleRuleChange = (index,rule, value) => {
     const values = [...fantasyRules];
-    values[index][rule] = value;
-    //setFantasyRules[values];
+    values[index][rule.replaceAll(" ","_")] = value;
+    setFantasyRules(values);
   }
 
+  //do this when roster numeric fields are changed
   const handleRosterChange = (index,spot, value) => {
     const values = [...fantasyRoster];
     values[index][spot] = value;
     setFantasyRoster(values);
   }
 
+  //do this when flex checkboxes are ticked
   const handleFlexChange = (position) => {
     const index = fantasyRoster[fantasyRoster.length-1]["Flex Positions"].indexOf(position);
     if (index > -1) {
@@ -438,6 +442,8 @@ function App() {
     return(out);
   }
 
+  //input index
+  //returns html numeric field for that row of rules array
   const rule = (n,index) => {
     return([
       <label>{n}</label>,
@@ -453,6 +459,7 @@ function App() {
     );
   }
 
+  //compiles all numeric fields for rules, also adds check boxes for flex options
   const rules = () => {
     console.log("updating rules");
     let out = [];
@@ -464,6 +471,7 @@ function App() {
     return(out);
   }
 
+  //makes button that hides/shows rules
   const ruleButton = () => {
     console.log("making rule Button");
     let show = fantasyRules[0]["showRules"];
@@ -488,6 +496,8 @@ function App() {
     }
   }
 
+  //input position name, index
+  //returns html numeric field
   const rosterSpot = (n,index) => {
     return([
       <label>{n}</label>,
@@ -503,6 +513,8 @@ function App() {
     );
   }
 
+  //input position name
+  //constructs html checkbox for flex option
   const flexTick = (s) => {
     return([
       <label>{s}</label>,
@@ -516,6 +528,7 @@ function App() {
     ])
   }
 
+  //compiles all flex checkboxes together
   const flexOptions = (s) => {
     let out = [];
     for(let i=0; i<s.length;i++){
@@ -524,7 +537,7 @@ function App() {
     return(out);
   }
 
-
+  //compiles all fields for roster spots together
   const roster = () => {
     console.log("updating roster spots");
     let out = [];
@@ -548,6 +561,7 @@ function App() {
     return(out);
   }
 
+  //creates button to show/hide roster options
   const rosterButton = () => {
     console.log("making roster Button");
     let show = fantasyRoster[0]["showRoster"];
