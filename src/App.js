@@ -83,7 +83,7 @@ const default_roster = [
                         {"K":1},
                         {"Def":1},
                         {"Bench":6},
-                        {"Flex Positions": ["RB","WR","TE","Def"]}
+                        {"Flex Positions": ["RB","WR","TE"]}
 ]
 
 
@@ -435,6 +435,7 @@ function App() {
     if(typeof columns[index] == "undefined"){
       console.log("undefined columns");
     }else{
+        out.push(<label>Filter By:</label>)
         for(let i = 0;i<columns[index].length;i++){
           out.push(filter(index,i));
       }
@@ -452,9 +453,11 @@ function App() {
       //max={maximums[columns[index][n]]}
       name={n}
       label={n}
+      size={1}
       value = {default_rules[index][listAllProperties(fantasyRules[index])[0]]}
       onChange={event => handleRuleChange(index,n,event)}>
-      </NumericInput>
+      </NumericInput>,
+      <br></br>
     ]
     );
   }
@@ -506,9 +509,11 @@ function App() {
       //max={maximums[columns[index][n]]}
       name={n}
       label={n}
+      size={1}
       value = {default_roster[index][listAllProperties(fantasyRoster[index])[0]]}
       onChange={event => handleRosterChange(index,n,event)}>
-      </NumericInput>
+      </NumericInput>,
+      <br></br>
     ]
     );
   }
@@ -590,12 +595,14 @@ function App() {
   const query_bar = () => {
     return(
       [
+      <label>Player/Teat Stats</label>,
       <Dropdown 
         name="query_bar"
         options={Query_Types[0]} 
         value={Query_Types[0][0]} 
         onChange = {event => handleQueryTypeChange(event)}
         />,
+        <label>Offense/Defense</label>,
       <Dropdown 
       name="query_bar2"
       options={Query_Types[1]} 
