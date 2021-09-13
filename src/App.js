@@ -616,6 +616,7 @@ function App() {
     //html page returned
     return(
       <Container>
+        <title>{"StatGenie"}</title>
         <h1>New Search</h1>
         <form>
           <div key="query_bar">
