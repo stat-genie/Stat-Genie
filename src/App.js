@@ -42,7 +42,6 @@ let counter =0;
 //Filter types allowed
 const Filter_Types = {"Player":['Name', 'Between Weeks', 'Stat', 'Position','Experience', 'Age', 'Opponent'], "Team":['Name', 'Between Weeks','Stat','Opponent']};
 
-
 //fields with dropdown values
 const dropdown_cols = ["Stat", "Position", "Top"];
 
@@ -62,6 +61,7 @@ const dropdowns = {"Stat": stats, "Position": positions, "Top": top};
 //default field type
 const default_filters =  { Player_Filter_Type: 'Name', Name: 'Enter Player Name'};
 
+//default fantasy rules
 const default_rules = [ 
                         {"showRules": false},
                         {"PPR": 0},
@@ -73,6 +73,7 @@ const default_rules = [
                         {"Passing_Yard_Per_Point": 25 }
                       ];
 
+//default fantasy roster
 const default_roster = [
                         {"showRoster": false},
                         {"QB":1},
@@ -139,10 +140,12 @@ function App() {
     default_filters,
   ]);
 
+  //master list of fantasy rules
   const [fantasyRules, setFantasyRules] = useState(
     default_rules
   );
 
+  //master list of roster spots
   const [fantasyRoster, setFantasyRoster] = useState(
     default_roster,
   );
@@ -218,6 +221,7 @@ function App() {
     console.log("InputFields",inputFields)
   }
 
+  //do this when show/hide rule button is clicked
   const handleRuleButton = () => {
     console.log("handleRuleButton");
     let values = [...fantasyRules];
@@ -230,6 +234,7 @@ function App() {
     setFantasyRules(values);
   }
 
+  //do this when show/hide roster button is clicked
   const handleRosterButton = () => {
     console.log("handleRosterButton");
     let values = [...fantasyRoster];
@@ -247,6 +252,7 @@ function App() {
   //takes index as input to keep track of which options remain
   const handleAddFields = (index) => {
     console.log("add");
+    console.log(filters_left[query_type]);
     let fieldType = filters_left[query_type][index+1][0];
     let newField = createFields(fieldType, true);
     let values =[...inputFields];
@@ -443,6 +449,16 @@ function App() {
     return(out);
   }
 
+  //returns step size for rules num inputs
+  //if PPR, 0.5, else 1
+  const step_size = (label) => {
+    if(label=="PPR"){
+      return(0.5);
+    }else{
+      return(1);
+    }
+  }
+
   //input index
   //returns html numeric field for that row of rules array
   const rule = (n,index) => {
@@ -450,6 +466,7 @@ function App() {
       <label>{n}</label>,
       <NumericInput
       min={0}
+      step={step_size(n)}
       //max={maximums[columns[index][n]]}
       name={n}
       label={n}
@@ -514,8 +531,7 @@ function App() {
       onChange={event => handleRosterChange(index,n,event)}>
       </NumericInput>,
       <br></br>
-    ]
-    );
+    ]);
   }
 
   //input position name
@@ -616,8 +632,7 @@ function App() {
     //html page returned
     return(
       <Container>
-        <title>{"StatGenie"}</title>
-        <h1>New Search</h1>
+        <h1>Ask The Genie:</h1>
         <form>
           <div key="query_bar">
             {query_bar()}
@@ -630,13 +645,13 @@ function App() {
               <IconButton
                 onClick = {() => handleRemoveFields(index)}
               >
-                <RemoveIcon></RemoveIcon>
+              <RemoveIcon></RemoveIcon>
               </IconButton>
               <IconButton
                 onClick={() => handleAddFields(index)}
               >
-                <AddIcon>
-                </AddIcon>
+              <AddIcon>
+              </AddIcon>
               </IconButton>
             </div>
           ))}
@@ -661,7 +676,6 @@ function App() {
           {roster()}  
           </div>
         </form>
-        
       </Container>
     )
 }
